@@ -19,7 +19,7 @@ private:
 	std::string status; // Active; Needs correction; Not active; Deleted
 public:
 	// По дефолту access_level = "User", name = "", mail = "", status = "Needs correction"
-	user(char log[32], char pas[32], char acl[8] = const_cast<char*>("User"), char nam[16] = const_cast<char*>(""), char eml[32] = const_cast<char*>(""), char stt[18] = const_cast<char*>("Needs correction"))
+	user(char log[32], char pas[32], char acl[16] = const_cast<char*>("User"), char nam[16] = const_cast<char*>(""), char eml[32] = const_cast<char*>(""), char stt[18] = const_cast<char*>("Needs correction"))
 	{
 		login = log;
 		password = pas;
@@ -31,7 +31,7 @@ public:
 			// Проверка на то, что уровень доступа введён корректно
 			!(acl == "Admin" || acl == "Manager" || acl == "User") ||
 			//Проверка на то, что имя и имэил введены
-			name == "" || email == "")
+			nam == "" || eml == "")
 		{
 			status = "Needs correction"; // Если хоть один из тестов выше не был пройден, то присваивается статус "Needs correction"
 		}
@@ -70,7 +70,7 @@ void print(nlohmann::json Database) {
 	std::cout << "|login";
 	SetConsoleCursorPosition(console, { 48, 0 });
 	std::cout << "|email";
-	SetConsoleCursorPosition(console, { 80, 0 });
+	SetConsoleCursorPosition(console, { 79, 0 });
 	std::cout << "|status";
 	SetConsoleCursorPosition(console, { 98, 0 });
 	std::cout << "|\n";
@@ -82,7 +82,7 @@ void print(nlohmann::json Database) {
 		std::cout << '|' << Database[i]["login"];
 		SetConsoleCursorPosition(console, { 48, i2 });
 		std::cout << '|' << Database[i]["email"];
-		SetConsoleCursorPosition(console, { 80, i2 });
+		SetConsoleCursorPosition(console, { 79, i2 });
 		std::cout << '|' << Database[i]["status"];
 		SetConsoleCursorPosition(console, { 98, i2 });
 		std::cout << "|\n";
@@ -90,10 +90,32 @@ void print(nlohmann::json Database) {
 	std::cout << "---------------------------------------------------------------------------------------------------";
 }
 
+// Вывод дополнительной информации о юзере
+void more_info_print(nlohmann::json Database) {
+	SetConsoleCursorPosition(console, { 98, 0 });
+	std::cout << "|password";
+	SetConsoleCursorPosition(console, { 130, 0 });
+	std::cout << "|access_level";
+	SetConsoleCursorPosition(console, { 146, 0 });
+	std::cout << '|';
+	SetConsoleCursorPosition(console, { 98, 1 });
+	std::cout << "-------------------------------------------------";
+	short i2 = 2;
+	for (short i = 0; i < Database.size(); i++, i2++) {
+		SetConsoleCursorPosition(console, { 98, i2 });
+		std::cout << '|' << Database[i]["password"];
+		SetConsoleCursorPosition(console, { 130, i2 });
+		std::cout << '|' << Database[i]["access_level"];
+		SetConsoleCursorPosition(console, { 146, i2 });
+		std::cout << '|';
+	}
+	SetConsoleCursorPosition(console, { 98, i2 });
+	std::cout << "-------------------------------------------------";
+}
+
 // Функция создания юзера
 nlohmann::json create(nlohmann::json Database) {
 	system("cls");
-	auto old_Database = Database;
 	std::cout << "Enter user's login: \n";
 	std::cout << "Enter user's password: ";
 	SetConsoleCursorPosition(console, { 20, 0 });
@@ -105,7 +127,8 @@ nlohmann::json create(nlohmann::json Database) {
 	std::cin >> password;
 	user a(login, password);
 	system("cls");
-	Database = a + old_Database;
+	//Database.();
+	Database = a + Database;
 	save(Database); // Сохранение логина и пароля юзера на случай краша
 
 	std::cout << "Enter user's name: \n";
@@ -118,7 +141,7 @@ nlohmann::json create(nlohmann::json Database) {
 	std::cin >> email;
 	system("cls");
 	user b(login, password, (char[8])"User", name, email);
-	Database = b + old_Database;
+	Database = b + Database;
 	save(Database); // Повторное сохранение на случай краша
 
 	std::cout << "Select user's access_level: Admin Manager User\n";
@@ -234,7 +257,7 @@ nlohmann::json create(nlohmann::json Database) {
 		break;
 	}
 	user c(login, password, access_level.data(), name, email, status.data());
-	Database = c + old_Database;
+	//Database = c + old_Database;
 	save(Database);
 	return Database;
 }
@@ -326,10 +349,16 @@ int main() {
 			Database = create(Database);
 			break;
 		}
-		std::cout << std::endl << "(PRESS [BACKSPACE], TO GO BACK)";
+		std::cout << std::endl << "(PRESS [BACKSPACE] TO GO BACK)";
+		if (pos == 0) {
+			std::cout << "\b \b OR [NUMPAD +] TO SHOW MORE INFO";
+		}
 		while (true) {
 			if (GetAsyncKeyState(VK_BACK)) {
 				goto menu;
+			}
+			else if (GetAsyncKeyState(VK_ADD) && pos == 0) {
+				more_info_print(Database);
 			}
 		}
 	}
