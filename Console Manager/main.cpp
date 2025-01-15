@@ -1,44 +1,341 @@
 #include <iostream>
+#include <windows.h> 
+#include <filesystem>
+#include <fstream>
+#include <nlohmann/json.hpp>
+
+HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
+
+namespace fs = std::filesystem;
+
 
 class user {
 private:
+	std::string login; // Обязательный
+	std::string password; // Обязательный; должен быть зашифрован; hash-salt, sha256-hash или аналогичные
+	std::string access_level; // Admin; Manager; User
 	std::string name;
-	std::string login; // Должен быть уникальным
-	std::string mail;
+	std::string email;
 	std::string status; // Active; Needs correction; Not active; Deleted
-	std::string password; // Должен быть зашифрован; hash-salt, sha256-hash или аналогичные
-	std::string access_level; //Admin; Manager; User
 public:
-	user(std::string log, std::string pas, std::string acl, std::string nam = "", std::string mal = "", std::string stt = "Needs correction")
+	// По дефолту access_level = "User", name = "", mail = "", status = "Needs correction"
+	user(char log[32], char pas[32], char acl[8] = const_cast<char*>("User"), char nam[16] = const_cast<char*>(""), char eml[32] = const_cast<char*>(""), char stt[18] = const_cast<char*>("Needs correction"))
 	{
-		bool allcorrect = true;
-		name = nam;
 		login = log;
-		mail = mal;
-		if (!(stt == "Active" || stt == "Needs correction" || stt == "Not active" || stt == "Deleted")) { // Проверка на то, что статус введён корректно
-			allcorrect = false;
-		}
-		if (!(acl == "Admin" || acl == "Manager" || acl == "User")) { // Проверка на то, что уровень доступа введён корректно
-			allcorrect = false;
-		}
-		// При незаполнении имени, имейла или провале на одной из двух предыдущих проверок, пользователь получает статус "Needs correction"
-		if (name == "" || mail == "" || !allcorrect)
+		password = pas;
+		access_level = acl;
+		name = nam;
+		email = eml;
+		if (// Проверка на то, что статус введён корректно
+			!(stt == "Active" || stt == "Needs correction" || stt == "Not active" || stt == "Deleted") || 
+			// Проверка на то, что уровень доступа введён корректно
+			!(acl == "Admin" || acl == "Manager" || acl == "User") ||
+			//Проверка на то, что имя и имэил введены
+			name == "" || email == "")
 		{
-			status = "Needs correction";
+			status = "Needs correction"; // Если хоть один из тестов выше не был пройден, то присваивается статус "Needs correction"
 		}
 		else
 		{
-			status = stt;
+			status = stt; // Если всё было заполнено верно, то присвоится введённый статус
 		}
-		password = pas;
-		access_level = acl;
+	}
+
+	// Функция записи переменных из класса в бд (не физическую) 
+	nlohmann::json operator+(nlohmann::json &Database) {
+		nlohmann::json Data = {
+			{"name", name},
+			{"login", login},
+			{"email", email},
+			{"status", status},
+			{"name", name},
+			{"password", password},
+			{"access_level", access_level}
+		};
+		Database.push_back(Data);
+		return Database;
 	}
 };
 
+// Функция записи данных из не физической бд в физическую бд 
+void save(nlohmann::json Database) {
+	std::ofstream file("Database.json");
+	file << Database;
+}
+
+// Функция вывода бд
+void print(nlohmann::json Database) {
+	std::cout << "|name";
+	SetConsoleCursorPosition(console, { 16, 0 });
+	std::cout << "|login";
+	SetConsoleCursorPosition(console, { 48, 0 });
+	std::cout << "|email";
+	SetConsoleCursorPosition(console, { 80, 0 });
+	std::cout << "|status";
+	SetConsoleCursorPosition(console, { 98, 0 });
+	std::cout << "|\n";
+	std::cout << "---------------------------------------------------------------------------------------------------";
+	for (short i = 0, i2 = 2; i < Database.size(); i++, i2++) {
+		SetConsoleCursorPosition(console, { 0, i2 });
+		std::cout << '|' << Database[i]["name"];
+		SetConsoleCursorPosition(console, { 16, i2 });
+		std::cout << '|' << Database[i]["login"];
+		SetConsoleCursorPosition(console, { 48, i2 });
+		std::cout << '|' << Database[i]["email"];
+		SetConsoleCursorPosition(console, { 80, i2 });
+		std::cout << '|' << Database[i]["status"];
+		SetConsoleCursorPosition(console, { 98, i2 });
+		std::cout << "|\n";
+	}
+	std::cout << "---------------------------------------------------------------------------------------------------";
+}
+
+// Функция создания юзера
+nlohmann::json create(nlohmann::json Database) {
+	system("cls");
+	auto old_Database = Database;
+	std::cout << "Enter user's login: \n";
+	std::cout << "Enter user's password: ";
+	SetConsoleCursorPosition(console, { 20, 0 });
+	char login[32];
+	SetConsoleCursorPosition(console, { 20, 0 });
+	std::cin >> login;
+	SetConsoleCursorPosition(console, { 23, 1 });
+	char password[32];
+	std::cin >> password;
+	user a(login, password);
+	system("cls");
+	Database = a + old_Database;
+	save(Database); // Сохранение логина и пароля юзера на случай краша
+
+	std::cout << "Enter user's name: \n";
+	std::cout << "Enter user's email: \n";
+	SetConsoleCursorPosition(console, { 19, 0 });
+	char name[16];
+	std::cin >> name;
+	SetConsoleCursorPosition(console, { 20, 1 });
+	char email[32];
+	std::cin >> email;
+	system("cls");
+	user b(login, password, (char[8])"User", name, email);
+	Database = b + old_Database;
+	save(Database); // Повторное сохранение на случай краша
+
+	std::cout << "Select user's access_level: Admin Manager User\n";
+	std::cout << "Select user's status: Active Needs correction Not active Deleted\n";
+	int acl = 0;
+	int stt = 0;
+	bool switcher = true;
+	do {
+		if (GetAsyncKeyState(VK_UP) || GetAsyncKeyState(VK_DOWN)) {
+			switcher = !switcher;
+		}
+		else if (GetAsyncKeyState(VK_RIGHT)) {
+			if (switcher) {
+				if (acl != 2) {
+					acl++;
+				}
+			}
+			else {
+				if (stt != 3) {
+					stt++;
+				}
+			}
+		}
+		else if (GetAsyncKeyState(VK_LEFT)) {
+			if (switcher) {
+				if (acl != 0) {
+					acl--;
+				}
+			}
+			else {
+				if (stt != 0) {
+					stt--;
+				}
+			}
+		}
+		else if (GetAsyncKeyState(VK_TAB)) {
+			break;
+		}
+		switch (switcher) {
+		case true:
+			SetConsoleCursorPosition(console, { 14, 0 });
+			std::cout << "\033[30m\033[107maccess_level\033[0m\033[40m";
+			SetConsoleCursorPosition(console, { 14, 1 });
+			std::cout << "status";
+			break;
+		case false:
+			SetConsoleCursorPosition(console, { 14, 0 });
+			std::cout << "access_level";
+			SetConsoleCursorPosition(console, { 14, 1 });
+			std::cout << "\033[30m\033[107mstatus\033[0m\033[40m";
+			break;
+		}
+		switch (acl) {
+		case 0:
+			SetConsoleCursorPosition(console, { 28, 0 });
+			std::cout << "\033[30m\033[107mAdmin\033[0m\033[40m Manager User";
+			break;
+		case 1:
+			SetConsoleCursorPosition(console, { 28, 0 });
+			std::cout << "Admin \033[30m\033[107mManager\033[0m\033[40m User";
+			break;
+		case 2:
+			SetConsoleCursorPosition(console, { 28, 0 });
+			std::cout << "Admin Manager \033[30m\033[107mUser\033[0m\033[40m";
+			break;
+		}
+		switch (stt) {
+		case 0:
+			SetConsoleCursorPosition(console, { 22, 1 });
+			std::cout << "\033[30m\033[107mActive\033[0m\033[40m Needs correction Not active Deleted";
+			break;
+		case 1:
+			SetConsoleCursorPosition(console, { 22, 1 });
+			std::cout << "Active \033[30m\033[107mNeeds correction\033[0m\033[40m Not active Deleted";
+			break;
+		case 2:
+			SetConsoleCursorPosition(console, { 22, 1 });
+			std::cout << "Active Needs correction \033[30m\033[107mNot active\033[0m\033[40m Deleted";
+			break;
+		case 3:
+			SetConsoleCursorPosition(console, { 22, 1 });
+			std::cout << "Active Needs correction Not active \033[30m\033[107mDeleted\033[0m\033[40m";
+			break;
+		}
+		Sleep(100);
+	} while (true);
+
+	std::string access_level;
+	switch (acl) {
+	case 0:
+		access_level = "Admin";
+		break;
+	case 1:
+		access_level = "Manager";
+		break;
+	case 2:
+		access_level = "User";
+		break;
+	}
+	std::string status;
+	switch (stt) {
+	case 0:
+		status = "Active";
+		break;
+	case 1:
+		status = "Needs correction";
+		break;
+	case 2:
+		status = "Not active";
+		break;
+	case 3:
+		status = "Deleted";
+		break;
+	}
+	user c(login, password, access_level.data(), name, email, status.data());
+	Database = c + old_Database;
+	save(Database);
+	return Database;
+}
 
 int main() {
+	setlocale(0, "");
+	if (fs::exists("Database.json")) // Проверка на существование бд
+	{
+		// Запись данных из физической бд в переменную 
+		std::ifstream database("Database.json");
+		nlohmann::json Database;
+		database >> Database;
 
+		// Вход в систему
+		do {
+			// Ввод логина и пароля
+			std::cout << "PLEASE ENTER YOUR LOGIN AND PASSWORD!\n";
+			std::cout << "LOGIN: \n";
+			std::cout << "PASSWORD: ";
+			SetConsoleCursorPosition(console, { 7, 1 });
+			std::string login;
+			std::cin >> login; // Guy228
+			SetConsoleCursorPosition(console, { 10, 2 });
+			std::string password;
+			std::cin >> password; // abc123
+			// Проверка на соответствие введённых данных с данными из бд
+			bool chek = false;
+			int i = 0;
+			for (; i < Database.size(); i++)
+			{
+				if (Database[i]["login"] == login && Database[i]["password"] == password) {
+					chek = true;
+					break;
+				}
+			}
+			system("cls");
+			if (chek)
+			{
+				std::cout << "WELCOME, " << Database[i]["name"] << '!';
+				Sleep(1500);
+				break;
+			}
+			else
+			{
+				std::cout << "WRONG PASSWORD OR LOGIN!";
+				Sleep(1500);
+				system("cls");
+			}
+		} while (1);
 
+		menu:
+		system("cls");
+		// Главное меню
+		std::cout << "(USE ARROWS TO MOVE)\n";
+		std::cout << "PRINT USERS\n";
+		std::cout << "CREATE A USER\n";
+		std::cout << "(PRESS [TAB] TO CONTINUE)";
+		int pos = 0;
+		do {
+			if (GetAsyncKeyState(VK_UP)) {
+				pos = 0;
+			}
+			else if (GetAsyncKeyState(VK_DOWN)) {
+				pos = 1;
+			}
+			else if (GetAsyncKeyState(VK_TAB)) {
+				break;
+			}
+			switch (pos) {
+			case 0:
+				SetConsoleCursorPosition(console, { 0, 1 });
+				std::cout << "\033[30m\033[107mPRINT USERS\033[0m\033[40m\n";
+				std::cout << "CREATE A USER";
+				break;
+			case 1:
+				SetConsoleCursorPosition(console, { 0, 1 });
+				std::cout << "PRINT USERS\n";
+				std::cout << "\033[30m\033[107mCREATE A USER\033[0m\033[40m";
+				break;
+			}
+		} while (true);
+		system("cls");
 
+		switch (pos) {
+		case 0:
+			print(Database);
+			break;
+		case 1:
+			Database = create(Database);
+			break;
+		}
+		std::cout << std::endl << "(PRESS [BACKSPACE], TO GO BACK)";
+		while (true) {
+			if (GetAsyncKeyState(VK_BACK)) {
+				goto menu;
+			}
+		}
+	}
+	else
+	{
+		std::cout << "Database was not found!";
+	}
 	return 0;
 }
