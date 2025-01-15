@@ -6,4 +6,5 @@
 4. Заинстолить конкретную библиотеку: ```vcpkg install nlohmann-json```
 5. Скачать с GitHub или клонировать мой репрезеторий в Visual Studio (это один из вариантов "Начала работы" справа при запуске VS)
 6. В открытом проекте в верхней панели перейти в "Вид" -> "Терминал"
-7. Прописать: ```vcpkg integrate install``` (Для этого нужны права админа)
+7. Добавить vcpkg в path: ```$env:VCPKG_ROOT = "C:\path\to\vcpkg"``` ```$env:PATH = "$env:VCPKG_ROOT;$env:PATH"```
+8. Прописать: ```vcpkg integrate install``` (Для этого нужны права админа)
