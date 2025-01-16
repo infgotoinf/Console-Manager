@@ -1,8 +1,10 @@
 #include <iostream>
-#include <windows.h> 
+#include <cassert>
+#include <windows.h>
 #include <filesystem>
 #include <fstream>
 #include <nlohmann/json.hpp>
+
 
 HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
 
@@ -38,6 +40,13 @@ public:
 		}
 	}
 
+	auto get_login() { return login; }
+	auto get_password() { return password; }
+	auto get_access_level() { return access_level; }
+	auto get_name() { return name; }
+	auto get_email() { return email; }
+	auto get_status() { return status; }
+
 	// Функция записи переменных из класса в бд (не физическую) 
 	nlohmann::json operator+(nlohmann::json &Database) {
 		nlohmann::json Data = {
@@ -53,6 +62,7 @@ public:
 		return Database;
 	}
 };
+
 
 // Функция записи данных из не физической бд в физическую бд 
 void save(nlohmann::json Database) {
@@ -248,6 +258,11 @@ nlohmann::json create(nlohmann::json Database) {
 
 int main() {
 	setlocale(0, "");
+
+
+
+
+
 	if (fs::exists("Database.json")) // Проверка на существование бд
 	{
 		// Запись данных из физической бд в переменную 
