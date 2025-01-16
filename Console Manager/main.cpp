@@ -19,25 +19,22 @@ private:
 	std::string status; // Active; Needs correction; Not active; Deleted
 public:
 	// По дефолту access_level = "User", name = "", mail = "", status = "Needs correction"
-	user(char log[32], char pas[32], char acl[16] = const_cast<char*>("User"), char nam[16] = const_cast<char*>(""), char eml[32] = const_cast<char*>(""), char stt[18] = const_cast<char*>("Needs correction"))
+	user(char log[32], char pas[32], char acl[16] = const_cast<char*>("User"), char nam[16] = const_cast<char*>(" "), char eml[32] = const_cast<char*>(" "), char stt[18] = const_cast<char*>("Needs correction"))
 	{
 		login = log;
 		password = pas;
 		access_level = acl;
 		name = nam;
 		email = eml;
+		status = stt;
 		if (// Проверка на то, что статус введён корректно
-			!(stt == "Active" || stt == "Needs correction" || stt == "Not active" || stt == "Deleted") || 
+			!(status == "Active" || status == "Needs correction" || status == "Not active" || status == "Deleted") ||
 			// Проверка на то, что уровень доступа введён корректно
-			!(acl == "Admin" || acl == "Manager" || acl == "User") ||
+			!(access_level == "Admin" || access_level == "Manager" || access_level == "User") ||
 			//Проверка на то, что имя и имэил введены
-			nam == "" || eml == "")
+			name == " " || email == " ")
 		{
 			status = "Needs correction"; // Если хоть один из тестов выше не был пройден, то присваивается статус "Needs correction"
-		}
-		else
-		{
-			status = stt; // Если всё было заполнено верно, то присвоится введённый статус
 		}
 	}
 
@@ -127,7 +124,6 @@ nlohmann::json create(nlohmann::json Database) {
 	std::cin >> password;
 	user a(login, password);
 	system("cls");
-	//Database.();
 	Database = a + Database;
 	save(Database); // Сохранение логина и пароля юзера на случай краша
 
@@ -140,6 +136,7 @@ nlohmann::json create(nlohmann::json Database) {
 	char email[32];
 	std::cin >> email;
 	system("cls");
+	Database.erase(Database.end() - 1);
 	user b(login, password, (char[8])"User", name, email);
 	Database = b + Database;
 	save(Database); // Повторное сохранение на случай краша
@@ -211,19 +208,11 @@ nlohmann::json create(nlohmann::json Database) {
 		switch (stt) {
 		case 0:
 			SetConsoleCursorPosition(console, { 22, 1 });
-			std::cout << "\033[30m\033[107mActive\033[0m\033[40m Needs correction Not active Deleted";
+			std::cout << "\033[30m\033[107mActive\033[0m\033[40m Not active";
 			break;
 		case 1:
 			SetConsoleCursorPosition(console, { 22, 1 });
-			std::cout << "Active \033[30m\033[107mNeeds correction\033[0m\033[40m Not active Deleted";
-			break;
-		case 2:
-			SetConsoleCursorPosition(console, { 22, 1 });
-			std::cout << "Active Needs correction \033[30m\033[107mNot active\033[0m\033[40m Deleted";
-			break;
-		case 3:
-			SetConsoleCursorPosition(console, { 22, 1 });
-			std::cout << "Active Needs correction Not active \033[30m\033[107mDeleted\033[0m\033[40m";
+			std::cout << "Active \033[30m\033[107mNot active\033[0m\033[40m";
 			break;
 		}
 		Sleep(100);
@@ -247,17 +236,12 @@ nlohmann::json create(nlohmann::json Database) {
 		status = "Active";
 		break;
 	case 1:
-		status = "Needs correction";
-		break;
-	case 2:
 		status = "Not active";
 		break;
-	case 3:
-		status = "Deleted";
-		break;
 	}
+	Database.erase(Database.end() - 1);
 	user c(login, password, access_level.data(), name, email, status.data());
-	//Database = c + old_Database;
+	Database = c + Database;
 	save(Database);
 	return Database;
 }
@@ -343,23 +327,48 @@ int main() {
 
 		switch (pos) {
 		case 0:
-			print(Database);
 			break;
 		case 1:
 			Database = create(Database);
 			break;
 		}
-		std::cout << std::endl << "(PRESS [BACKSPACE] TO GO BACK)";
-		if (pos == 0) {
-			std::cout << "\b \b OR [NUMPAD +] TO SHOW MORE INFO";
-		}
+
+		// Вывод таблицы и управление бд
+		COORD coords = { 1, 2 };
+		table:
+		system("cls");
+		print(Database);
+		std::cout << std::endl << "[BACKSPACE] - MENU; ";
+		std::cout << "[NUMPAD +] - SHOW MORE INFO; ";
+		std::cout << "[DELETE] - DELETE USER; ";
+		int siz = Database.size() + 1;
 		while (true) {
 			if (GetAsyncKeyState(VK_BACK)) {
 				goto menu;
 			}
-			else if (GetAsyncKeyState(VK_ADD) && pos == 0) {
+			else if (GetAsyncKeyState(VK_ADD)) {
 				more_info_print(Database);
 			}
+			else if (GetAsyncKeyState(VK_UP)) {
+				if (coords.Y != 2) {
+					coords.Y--;
+				}
+			}
+			else if (GetAsyncKeyState(VK_DOWN)) {
+				if (coords.Y != siz) {
+					coords.Y++;
+				}
+			}
+			else if (GetAsyncKeyState(VK_DELETE)) {
+				std::cout << "Are you sure you want to delete user " << Database[coords.Y - 2]["login"] << "? Y - YES; N - NO";
+				if (GetAsyncKeyState(0x59)) {
+					Database.erase(--coords.Y - 1);
+				}
+				else if (GetAsyncKeyState(0x4E));
+				goto table;
+			}
+			SetConsoleCursorPosition(console, coords);
+			Sleep(50);
 		}
 	}
 	else
