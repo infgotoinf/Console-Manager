@@ -5,7 +5,6 @@
 #include <fstream>
 #include <nlohmann/json.hpp>
 
-
 HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
 
 namespace fs = std::filesystem;
@@ -122,12 +121,12 @@ void more_info_print(nlohmann::json Database) {
 
 // Функция создания юзера
 nlohmann::json create(nlohmann::json Database) {
+	SetConsoleCursorPosition(console, { 0, 0 });
 	system("cls");
 	std::cout << "Enter user's login: \n";
 	std::cout << "Enter user's password: ";
 	SetConsoleCursorPosition(console, { 20, 0 });
 	char login[32];
-	SetConsoleCursorPosition(console, { 20, 0 });
 	std::cin >> login;
 	SetConsoleCursorPosition(console, { 23, 1 });
 	char password[32];
@@ -138,7 +137,7 @@ nlohmann::json create(nlohmann::json Database) {
 	save(Database); // Сохранение логина и пароля юзера на случай краша
 
 	std::cout << "Enter user's name: \n";
-	std::cout << "Enter user's email: \n";
+	std::cout << "Enter user's email: ";
 	SetConsoleCursorPosition(console, { 19, 0 });
 	char name[16];
 	std::cin >> name;
@@ -152,7 +151,7 @@ nlohmann::json create(nlohmann::json Database) {
 	save(Database); // Повторное сохранение на случай краша
 
 	std::cout << "Select user's access_level: Admin Manager User\n";
-	std::cout << "Select user's status: Active Needs correction Not active Deleted\n";
+	std::cout << "Select user's status: Active Needs correction Not active Deleted";
 	int acl = 0;
 	int stt = 0;
 	bool switcher = true;
@@ -258,10 +257,6 @@ nlohmann::json create(nlohmann::json Database) {
 
 int main() {
 	setlocale(0, "");
-
-
-
-
 
 	if (fs::exists("Database.json")) // Проверка на существование бд
 	{
