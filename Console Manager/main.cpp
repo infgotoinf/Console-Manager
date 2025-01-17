@@ -1,4 +1,4 @@
-#include <iostream>
+#include "encrypt.h"
 #include <cassert>
 #include <windows.h>
 #include <filesystem>
@@ -23,7 +23,7 @@ public:
 	user(char log[32], char pas[32], char acl[16] = const_cast<char*>("User"), char nam[16] = const_cast<char*>(" "), char eml[32] = const_cast<char*>(" "), char stt[18] = const_cast<char*>("Needs correction"))
 	{
 		login = log;
-		password = pas;
+		password = encrypt(pas, log);
 		access_level = acl;
 		name = nam;
 		email = eml;
@@ -277,6 +277,7 @@ int main() {
 		database >> Database;
 
 		// Вход в систему
+		std::string user_access_level;
 		do {
 			// Ввод логина и пароля
 			std::cout << "PLEASE ENTER YOUR LOGIN AND PASSWORD!\n";
@@ -293,7 +294,7 @@ int main() {
 			int i = 0;
 			for (; i < Database.size(); i++)
 			{
-				if (Database[i]["login"] == login && Database[i]["password"] == password) {
+				if (Database[i]["login"] == login && Database[i]["password"] == encrypt(password, login)) {
 					chek = true;
 					break;
 				}
@@ -303,6 +304,7 @@ int main() {
 			{
 				std::cout << "WELCOME, " << Database[i]["name"] << '!';
 				Sleep(1500);
+				user_access_level = Database[i]["access_level"];
 				break;
 			}
 			else
@@ -361,14 +363,16 @@ int main() {
 		print(Database);
 		std::cout << std::endl << "[BACKSPACE] - MENU; ";
 		std::cout << "S - SAVE CHANGES; ";
-		std::cout << "[NUMPAD +] - SHOW MORE INFO; ";
-		std::cout << "[DELETE] - DELETE USER; ";
+		if (user_access_level == "Admin") {
+			std::cout << "[NUMPAD +] - SHOW MORE INFO; ";
+			std::cout << "[DELETE] - DELETE USER; ";
+		}
 		int siz = Database.size() + 1;
 		while (true) {
-			if (GetAsyncKeyState(VK_BACK)) {
+			if (GetAsyncKeyState(VK_BACK)) { // Выход в меню
 				goto menu;
 			}
-			else if (GetAsyncKeyState(VK_ADD)) {
+			else if (GetAsyncKeyState(VK_ADD) && user_access_level == "Admin") { // Вывод дополнительной информации
 				more_info_print(Database);
 			}
 			else if (GetAsyncKeyState(VK_UP)) {
@@ -381,7 +385,7 @@ int main() {
 					coords.Y++;
 				}
 			}
-			else if (GetAsyncKeyState(VK_DELETE)) {
+			else if (GetAsyncKeyState(VK_DELETE) && user_access_level == "Admin") { // Функция удаления пользователя
 				std::cout << "\033[31mAre you sure you want to delete user " << Database[coords.Y - 2]["login"] << "? Y - YES; N - NO\033[0m";
 				do {
 					if (GetAsyncKeyState(0x59)) {
@@ -392,7 +396,7 @@ int main() {
 				} while (true);
 				goto table;
 			}
-			else if (GetAsyncKeyState(0x53)) {
+			else if (GetAsyncKeyState(0x53)) { // Сохранение изменений
 				save(Database);
 				SetConsoleCursorPosition(console, {0, (short)(siz + 3)});
 				std::cout << "\033[32mDatabase was successfully saved!\033[0m";

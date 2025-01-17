@@ -30,7 +30,7 @@ std::string decrypt(const std::string& ciphertext, const std::string& baseKey) {
 int main() {
     setlocale(0, "");
     // Исходный текст
-    std::string plaintext = "dada";
+    std::string plaintext = "password123";
     std::string baseKey = "my_secret_key"; // Базовый ключ
 
     // Шифрование

@@ -1,5 +1,5 @@
 #pragma once
-#include <iostream>
+#include "encrypt.h"
 
 class user {
 private:
@@ -14,7 +14,7 @@ public:
 	user(char log[32], char pas[32], char acl[16] = const_cast<char*>("User"), char nam[16] = const_cast<char*>(" "), char eml[32] = const_cast<char*>(" "), char stt[18] = const_cast<char*>("Needs correction"))
 	{
 		login = log;
-		password = pas;
+		password = encrypt(pas, log);
 		access_level = acl;
 		name = nam;
 		email = eml;

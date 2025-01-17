@@ -1,6 +1,5 @@
 #include "user.h"
 #include <cassert>
-#include <iostream>
 #include <windows.h>
 
 void test_user_creation() {
@@ -10,7 +9,7 @@ void test_user_creation() {
 		char password[32] = "password123";
 		user default_user(login, password);
 		assert(default_user.get_login() == "login123");
-		assert(default_user.get_password() == "password123");
+		assert(default_user.get_password() == encrypt("password123", login));
 		assert(default_user.get_access_level() == "User");
 		assert(default_user.get_name() == " ");
 		assert(default_user.get_email() == " ");
@@ -27,7 +26,7 @@ void test_user_creation() {
 		char status[18] = "Active";
 		user custom_user(login, password, access_level, name, mail, status);
 		assert(custom_user.get_login() == "login456");
-		assert(custom_user.get_password() == "password456");
+		assert(custom_user.get_password() == encrypt("password456", login));
 		assert(custom_user.get_access_level() == "Admin");
 		assert(custom_user.get_name() == "John Doe");
 		assert(custom_user.get_email() == "john.doe@example.com");

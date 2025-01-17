@@ -1,3 +1,4 @@
+#pragma once
 #include <iostream>
 #include <string>
 #include <vector>
@@ -20,26 +21,4 @@ std::string encrypt(const std::string& plaintext, const std::string& baseKey) {
         ciphertext[i] ^= key[i]; // XOR с ключом
     }
     return ciphertext;
-}
-
-// Расшифровка строки
-std::string decrypt(const std::string& ciphertext, const std::string& baseKey) {
-    return encrypt(ciphertext, baseKey); // XOR работает симметрично
-}
-
-int main() {
-    setlocale(0, "");
-    // Исходный текст
-    std::string plaintext = "dada";
-    std::string baseKey = "my_secret_key"; // Базовый ключ
-
-    // Шифрование
-    std::string encrypted = encrypt(plaintext, baseKey);
-    std::cout << "Зашифрованный текст: " << encrypted << std::endl;
-
-    // Расшифровка
-    std::string decrypted = decrypt(encrypted, baseKey);
-    std::cout << "Расшифрованный текст: " << decrypted << std::endl;
-
-    return 0;
 }
