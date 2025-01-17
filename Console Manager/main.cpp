@@ -1,5 +1,6 @@
 #include <iostream>
-#include <windows.h> 
+#include <cassert>
+#include <windows.h>
 #include <filesystem>
 #include <fstream>
 #include <nlohmann/json.hpp>
@@ -38,6 +39,13 @@ public:
 		}
 	}
 
+	auto get_login() { return login; }
+	auto get_password() { return password; }
+	auto get_access_level() { return access_level; }
+	auto get_name() { return name; }
+	auto get_email() { return email; }
+	auto get_status() { return status; }
+
 	// Функция записи переменных из класса в бд (не физическую) 
 	nlohmann::json operator+(nlohmann::json &Database) {
 		nlohmann::json Data = {
@@ -53,6 +61,7 @@ public:
 		return Database;
 	}
 };
+
 
 // Функция записи данных из не физической бд в физическую бд 
 void save(nlohmann::json Database) {
@@ -112,12 +121,12 @@ void more_info_print(nlohmann::json Database) {
 
 // Функция создания юзера
 nlohmann::json create(nlohmann::json Database) {
+	SetConsoleCursorPosition(console, { 0, 0 });
 	system("cls");
 	std::cout << "Enter user's login: \n";
 	std::cout << "Enter user's password: ";
 	SetConsoleCursorPosition(console, { 20, 0 });
 	char login[32];
-	SetConsoleCursorPosition(console, { 20, 0 });
 	std::cin >> login;
 	SetConsoleCursorPosition(console, { 23, 1 });
 	char password[32];
@@ -128,7 +137,7 @@ nlohmann::json create(nlohmann::json Database) {
 	save(Database); // Сохранение логина и пароля юзера на случай краша
 
 	std::cout << "Enter user's name: \n";
-	std::cout << "Enter user's email: \n";
+	std::cout << "Enter user's email: ";
 	SetConsoleCursorPosition(console, { 19, 0 });
 	char name[16];
 	std::cin >> name;
@@ -142,6 +151,7 @@ nlohmann::json create(nlohmann::json Database) {
 	save(Database); // Повторное сохранение на случай краша
 
 	std::cout << "Select user's access_level: Admin Manager User\n";
+	std::cout << "Select user's status: Active Needs correction Not active Deleted";
 	std::cout << "Select user's status: Active Not active\n";
 	int acl = 0;
 	int stt = 0;
@@ -258,6 +268,7 @@ void status_upd(nlohmann::json &Database) {
 
 int main() {
 	setlocale(0, "");
+
 	if (fs::exists("Database.json")) // Проверка на существование бд
 	{
 		// Запись данных из физической бд в переменную 
