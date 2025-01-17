@@ -142,7 +142,7 @@ nlohmann::json create(nlohmann::json Database) {
 	save(Database); // Повторное сохранение на случай краша
 
 	std::cout << "Select user's access_level: Admin Manager User\n";
-	std::cout << "Select user's status: Active Needs correction Not active Deleted\n";
+	std::cout << "Select user's status: Active Not active\n";
 	int acl = 0;
 	int stt = 0;
 	bool switcher = true;
@@ -246,6 +246,16 @@ nlohmann::json create(nlohmann::json Database) {
 	return Database;
 }
 
+// Функция обновления статуса
+void status_upd(nlohmann::json &Database) {
+	if ((Database["status"] == "Active" || Database["status"] == "Needs correction" || Database["status"] == "Not active" || Database["status"] == "Deleted") ||
+		(Database["access_level"] == "Admin" || Database["access_level"] == "Manager" || Database["access_level"] == "User") ||
+		!(Database["name"] == " " || Database["email"] == " "))
+	{
+		Database["status"] = "Active"; // Если хоть один из тестов выше не был пройден, то присваивается статус "Needs correction"
+	}
+}
+
 int main() {
 	setlocale(0, "");
 	if (fs::exists("Database.json")) // Проверка на существование бд
@@ -339,6 +349,7 @@ int main() {
 		system("cls");
 		print(Database);
 		std::cout << std::endl << "[BACKSPACE] - MENU; ";
+		std::cout << "S - SAVE CHANGES; ";
 		std::cout << "[NUMPAD +] - SHOW MORE INFO; ";
 		std::cout << "[DELETE] - DELETE USER; ";
 		int siz = Database.size() + 1;
@@ -360,12 +371,22 @@ int main() {
 				}
 			}
 			else if (GetAsyncKeyState(VK_DELETE)) {
-				std::cout << "Are you sure you want to delete user " << Database[coords.Y - 2]["login"] << "? Y - YES; N - NO";
-				if (GetAsyncKeyState(0x59)) {
-					Database.erase(--coords.Y - 1);
-				}
-				else if (GetAsyncKeyState(0x4E));
+				std::cout << "\033[31mAre you sure you want to delete user " << Database[coords.Y - 2]["login"] << "? Y - YES; N - NO\033[0m";
+				do {
+					if (GetAsyncKeyState(0x59)) {
+						Database.erase(--coords.Y - 1);
+						break;
+					}
+					else if (GetAsyncKeyState(0x4E)) break;
+				} while (true);
 				goto table;
+			}
+			else if (GetAsyncKeyState(0x53)) {
+				save(Database);
+				SetConsoleCursorPosition(console, {0, (short)(siz + 3)});
+				std::cout << "\033[32mDatabase was successfully saved!\033[0m";
+				Sleep(1500);
+				std::cout << "\r                                ";
 			}
 			SetConsoleCursorPosition(console, coords);
 			Sleep(50);
