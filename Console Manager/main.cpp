@@ -1,5 +1,4 @@
 #include "encrypt.h"
-#include <cassert>
 #include <windows.h>
 #include <filesystem>
 #include <fstream>
@@ -19,21 +18,21 @@ private:
 	std::string email;
 	std::string status; // Active; Needs correction; Not active; Deleted
 public:
-	// По дефолту access_level = "User", name = "", mail = "", status = "Needs correction"
+	// По дефолту access_level = "User", name = " ", mail = " ", status = "Needs correction"
 	user(char log[32], char pas[32], char acl[16] = const_cast<char*>("User"), char nam[16] = const_cast<char*>(" "), char eml[32] = const_cast<char*>(" "), char stt[18] = const_cast<char*>("Needs correction"))
 	{
 		login = log;
 		password = encrypt(pas, log);
 		access_level = acl;
-		name = nam;
-		email = eml;
+		name = (strlen(nam) <= 1 ? " " : nam);
+		email = (strlen(eml) <= 1 ? " " : eml);
 		status = stt;
 		if (// Проверка на то, что статус введён корректно
 			!(status == "Active" || status == "Needs correction" || status == "Not active" || status == "Deleted") ||
 			// Проверка на то, что уровень доступа введён корректно
 			!(access_level == "Admin" || access_level == "Manager" || access_level == "User") ||
 			//Проверка на то, что имя и имэил введены
-			name == " " || email == " ")
+			name.size() <= 1 || email.size() <= 1)
 		{
 			status = "Needs correction"; // Если хоть один из тестов выше не был пройден, то присваивается статус "Needs correction"
 		}
@@ -67,6 +66,12 @@ public:
 void save(nlohmann::json Database) {
 	std::ofstream file("Database.json");
 	file << Database;
+}
+
+// Запись данных из физической бд в переменную
+void import(nlohmann::json& Database) {
+	std::ifstream database("Database.json");
+	database >> Database;
 }
 
 // Функция вывода бд
@@ -151,8 +156,7 @@ nlohmann::json create(nlohmann::json Database) {
 	save(Database); // Повторное сохранение на случай краша
 
 	std::cout << "Select user's access_level: Admin Manager User\n";
-	std::cout << "Select user's status: Active Needs correction Not active Deleted";
-	std::cout << "Select user's status: Active Not active\n";
+	std::cout << "Select user's status: Active Not active";
 	int acl = 0;
 	int stt = 0;
 	bool switcher = true;
@@ -271,10 +275,9 @@ int main() {
 
 	if (fs::exists("Database.json")) // Проверка на существование бд
 	{
-		// Запись данных из физической бд в переменную 
-		std::ifstream database("Database.json");
+		// Запись данных из физической бд в переменную
 		nlohmann::json Database;
-		database >> Database;
+		import(Database);
 
 		// Вход в систему
 		std::string user_access_level;
@@ -294,7 +297,7 @@ int main() {
 			int i = 0;
 			for (; i < Database.size(); i++)
 			{
-				if (Database[i]["login"] == login && Database[i]["password"] == encrypt(password, login)) {
+				if ((Database[i]["login"] == login && Database[i]["password"] == encrypt(password, login))) {
 					chek = true;
 					break;
 				}
@@ -361,7 +364,7 @@ int main() {
 		table:
 		system("cls");
 		print(Database);
-		std::cout << std::endl << "[BACKSPACE] - MENU; ";
+		std::cout << std::endl << "[ESC] - MENU; ";
 		std::cout << "S - SAVE CHANGES; ";
 		if (user_access_level == "Admin") {
 			std::cout << "[NUMPAD +] - SHOW MORE INFO; ";
@@ -369,7 +372,7 @@ int main() {
 		}
 		int siz = Database.size() + 1;
 		while (true) {
-			if (GetAsyncKeyState(VK_BACK)) { // Выход в меню
+			if (GetAsyncKeyState(VK_ESCAPE)) { // Выход в меню
 				goto menu;
 			}
 			else if (GetAsyncKeyState(VK_ADD) && user_access_level == "Admin") { // Вывод дополнительной информации
@@ -389,7 +392,13 @@ int main() {
 				std::cout << "\033[31mAre you sure you want to delete user " << Database[coords.Y - 2]["login"] << "? Y - YES; N - NO\033[0m";
 				do {
 					if (GetAsyncKeyState(0x59)) {
-						Database.erase(--coords.Y - 1);
+						if (coords.Y != 2) {
+							--coords.Y;
+							Database.erase(coords.Y - 1);
+						}
+						else {
+							Database.erase(coords.Y - 2);
+						}
 						break;
 					}
 					else if (GetAsyncKeyState(0x4E)) break;
