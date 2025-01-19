@@ -22,3 +22,8 @@ std::string encrypt(const std::string& plaintext, const std::string& baseKey) {
     }
     return ciphertext;
 }
+
+// Расшифровка строки
+std::string decrypt(const std::string& ciphertext, const std::string& baseKey) {
+    return encrypt(ciphertext, baseKey); // XOR работает симметрично
+}

@@ -74,8 +74,21 @@ void import(nlohmann::json& Database) {
 	database >> Database;
 }
 
+// Функция обновления статуса
+void status_upd(nlohmann::json& Database) {
+	if ((Database["status"] == "Active" || Database["status"] == "Needs correction" || Database["status"] == "Not active" || Database["status"] == "Deleted") ||
+		(Database["access_level"] == "Admin" || Database["access_level"] == "Manager" || Database["access_level"] == "User") ||
+		!(Database["name"] == " " || Database["email"] == " "))
+	{
+		Database["status"] = "Active"; // Если хоть один из тестов выше не был пройден, то присваивается статус "Needs correction"
+	}
+}
+
+
+
 // Функция вывода бд
-void print(nlohmann::json Database) {
+void print(nlohmann::json Database)
+{
 	std::cout << "|name";
 	SetConsoleCursorPosition(console, { 16, 0 });
 	std::cout << "|login";
@@ -86,7 +99,8 @@ void print(nlohmann::json Database) {
 	SetConsoleCursorPosition(console, { 98, 0 });
 	std::cout << "|\n";
 	std::cout << "---------------------------------------------------------------------------------------------------";
-	for (short i = 0, i2 = 2; i < Database.size(); i++, i2++) {
+	for (short i = 0, i2 = 2; i < Database.size(); i++, i2++)
+	{
 		SetConsoleCursorPosition(console, { 0, i2 });
 		std::cout << '|' << Database[i]["name"];
 		SetConsoleCursorPosition(console, { 16, i2 });
@@ -102,7 +116,8 @@ void print(nlohmann::json Database) {
 }
 
 // Вывод дополнительной информации о юзере
-void more_info_print(nlohmann::json Database) {
+void more_info_print(nlohmann::json Database)
+{
 	SetConsoleCursorPosition(console, { 98, 0 });
 	std::cout << "|password";
 	SetConsoleCursorPosition(console, { 130, 0 });
@@ -112,9 +127,10 @@ void more_info_print(nlohmann::json Database) {
 	SetConsoleCursorPosition(console, { 98, 1 });
 	std::cout << "-------------------------------------------------";
 	short i2 = 2;
-	for (short i = 0; i < Database.size(); i++, i2++) {
+	for (short i = 0; i < Database.size(); i++, i2++)
+	{
 		SetConsoleCursorPosition(console, { 98, i2 });
-		std::cout << '|' << Database[i]["password"];
+		std::cout << '|' << decrypt(Database[i]["password"], Database[i]["login"]);
 		SetConsoleCursorPosition(console, { 130, i2 });
 		std::cout << '|' << Database[i]["access_level"];
 		SetConsoleCursorPosition(console, { 146, i2 });
@@ -122,6 +138,77 @@ void more_info_print(nlohmann::json Database) {
 	}
 	SetConsoleCursorPosition(console, { 98, i2 });
 	std::cout << "-------------------------------------------------";
+}
+
+
+
+// Функция входа в систему
+std::string login(nlohmann::json& Database) {
+	std::string user_access_level;
+	do {
+		// Ввод логина и пароля
+		std::cout << "PLEASE ENTER YOUR LOGIN AND PASSWORD!\n";
+		std::cout << "LOGIN: \n";
+		std::cout << "PASSWORD: ";
+		SetConsoleCursorPosition(console, { 7, 1 });
+		std::string login;
+		std::cin >> login; // Guy228
+		SetConsoleCursorPosition(console, { 10, 2 });
+		std::string password;
+		std::cin >> password; // abc123
+		// Проверка на соответствие введённых данных с данными из бд
+		bool chek = false;
+		int i = 0;
+		for (; i < Database.size(); i++)
+		{
+			if ((Database[i]["login"] == login && Database[i]["password"] == encrypt(password, login))) {
+				chek = true;
+				break;
+			}
+		}
+		system("cls");
+		if (chek)
+		{
+			user_access_level = Database[i]["access_level"];
+			std::cout << "WELCOME, " << user_access_level << ' ' << Database[i]["name"] << '!';
+			Sleep(1500);
+			break;
+		}
+		else
+		{
+			std::cout << "WRONG PASSWORD OR LOGIN!";
+			Sleep(1500);
+			system("cls");
+		}
+	} while (1);
+	return user_access_level;
+}
+
+// Функция меню
+int menu(std::string user_access_level) {
+	std::cout << "(USE ARROWS TO MOVE)\n";
+	std::cout << "PRINT USERS\n";
+	if (user_access_level == "Admin") std::cout << "CREATE A USER\n";
+	std::cout << "(PRESS [TAB] TO CONTINUE)";
+	int pos = 0;
+	do {
+		if (GetAsyncKeyState(VK_TAB)) break;
+		else if (GetAsyncKeyState(VK_UP)) pos = 0;
+		else if (GetAsyncKeyState(VK_DOWN)) pos = 1;
+		switch (pos) {
+		case 0:
+			SetConsoleCursorPosition(console, { 0, 1 });
+			std::cout << "\033[30m\033[107mPRINT USERS\033[0m\033[40m\n";
+			std::cout << "CREATE A USER";
+			break;
+		case 1:
+			SetConsoleCursorPosition(console, { 0, 1 });
+			std::cout << "PRINT USERS\n";
+			std::cout << "\033[30m\033[107mCREATE A USER\033[0m\033[40m";
+			break;
+		}
+	} while (true);
+	return pos;
 }
 
 // Функция создания юзера
@@ -161,35 +248,23 @@ nlohmann::json create(nlohmann::json Database) {
 	int stt = 0;
 	bool switcher = true;
 	do {
-		if (GetAsyncKeyState(VK_UP) || GetAsyncKeyState(VK_DOWN)) {
-			switcher = !switcher;
-		}
+		if (GetAsyncKeyState(VK_TAB)) break;
+		else if (GetAsyncKeyState(VK_UP) || GetAsyncKeyState(VK_DOWN)) switcher = !switcher;
 		else if (GetAsyncKeyState(VK_RIGHT)) {
 			if (switcher) {
-				if (acl != 2) {
-					acl++;
-				}
+				if (acl != 2) acl++;
 			}
 			else {
-				if (stt != 3) {
-					stt++;
-				}
+				if (stt != 3) stt++;
 			}
 		}
 		else if (GetAsyncKeyState(VK_LEFT)) {
 			if (switcher) {
-				if (acl != 0) {
-					acl--;
-				}
+				if (acl != 0) acl--;
 			}
 			else {
-				if (stt != 0) {
-					stt--;
-				}
+				if (stt != 0) stt--;
 			}
-		}
-		else if (GetAsyncKeyState(VK_TAB)) {
-			break;
 		}
 		switch (switcher) {
 		case true:
@@ -260,15 +335,64 @@ nlohmann::json create(nlohmann::json Database) {
 	return Database;
 }
 
-// Функция обновления статуса
-void status_upd(nlohmann::json &Database) {
-	if ((Database["status"] == "Active" || Database["status"] == "Needs correction" || Database["status"] == "Not active" || Database["status"] == "Deleted") ||
-		(Database["access_level"] == "Admin" || Database["access_level"] == "Manager" || Database["access_level"] == "User") ||
-		!(Database["name"] == " " || Database["email"] == " "))
-	{
-		Database["status"] = "Active"; // Если хоть один из тестов выше не был пройден, то присваивается статус "Needs correction"
+// Функция управления бд
+void table(nlohmann::json& Database, std::string user_access_level)
+{
+	COORD coords = { 1, 2 };
+table:
+	system("cls");
+	print(Database);
+	std::cout << std::endl << "[ESC] - MENU; ";
+	if (user_access_level == "Admin" || user_access_level == "Manager") {
+		std::cout << "S - SAVE CHANGES; ";
+	}
+	if (user_access_level == "Admin") {
+		std::cout << "[NUMPAD +] - SHOW MORE INFO; ";
+		std::cout << "[DELETE] - DELETE USER; ";
+	}
+	int siz = Database.size() + 1;
+	bool more_info_printed = false;
+	while (true) {
+		if (GetAsyncKeyState(VK_ESCAPE)) return; // Выход в меню
+		else if (GetAsyncKeyState(VK_UP) && coords.Y != 2) coords.Y--;
+		else if (GetAsyncKeyState(VK_DOWN) && coords.Y != siz) coords.Y++;
+
+		else if (GetAsyncKeyState(VK_ADD) && user_access_level == "Admin") // Вывод дополнительной информации
+		{
+			more_info_print(Database);
+			more_info_printed = true;
+		}
+		else if (GetAsyncKeyState(VK_DELETE) && user_access_level == "Admin") // Функция удаления пользователя
+		{
+			std::cout << "\033[31mAre you sure you want to delete user " << Database[coords.Y - 2]["login"] << "? Y - YES; N - NO\033[0m";
+			do {
+				if (GetAsyncKeyState(0x59)) {
+					if (coords.Y != 2) {
+						--coords.Y;
+						Database.erase(coords.Y - 1);
+					}
+					else {
+						Database.erase(coords.Y - 2);
+					}
+					break;
+				}
+				else if (GetAsyncKeyState(0x4E)) break;
+			} while (true);
+			goto table;
+		}
+		else if (GetAsyncKeyState(0x53) && (user_access_level == "Admin" || user_access_level == "Manager")) { // Сохранение изменений
+			save(Database);
+			SetConsoleCursorPosition(console, { 0, (short)(siz + 3) });
+			std::cout << "\033[32mDatabase was successfully saved!\033[0m";
+			Sleep(1500);
+			std::cout << "\r                                ";
+		}
+		SetConsoleCursorPosition(console, coords);
+		Sleep(50);
 	}
 }
+
+
 
 int main() {
 	setlocale(0, "");
@@ -280,140 +404,23 @@ int main() {
 		import(Database);
 
 		// Вход в систему
-		std::string user_access_level;
-		do {
-			// Ввод логина и пароля
-			std::cout << "PLEASE ENTER YOUR LOGIN AND PASSWORD!\n";
-			std::cout << "LOGIN: \n";
-			std::cout << "PASSWORD: ";
-			SetConsoleCursorPosition(console, { 7, 1 });
-			std::string login;
-			std::cin >> login; // Guy228
-			SetConsoleCursorPosition(console, { 10, 2 });
-			std::string password;
-			std::cin >> password; // abc123
-			// Проверка на соответствие введённых данных с данными из бд
-			bool chek = false;
-			int i = 0;
-			for (; i < Database.size(); i++)
-			{
-				if ((Database[i]["login"] == login && Database[i]["password"] == encrypt(password, login))) {
-					chek = true;
-					break;
-				}
-			}
-			system("cls");
-			if (chek)
-			{
-				std::cout << "WELCOME, " << Database[i]["name"] << '!';
-				Sleep(1500);
-				user_access_level = Database[i]["access_level"];
-				break;
-			}
-			else
-			{
-				std::cout << "WRONG PASSWORD OR LOGIN!";
-				Sleep(1500);
-				system("cls");
-			}
-		} while (1);
+		std::string user_access_level = login(Database);
+		
 
-		menu:
+		menu: // Главное меню
+		import(Database); // Подгрузка актуальных данных из бд
 		system("cls");
-		// Главное меню
-		std::cout << "(USE ARROWS TO MOVE)\n";
-		std::cout << "PRINT USERS\n";
-		std::cout << "CREATE A USER\n";
-		std::cout << "(PRESS [TAB] TO CONTINUE)";
-		int pos = 0;
-		do {
-			if (GetAsyncKeyState(VK_UP)) {
-				pos = 0;
-			}
-			else if (GetAsyncKeyState(VK_DOWN)) {
-				pos = 1;
-			}
-			else if (GetAsyncKeyState(VK_TAB)) {
-				break;
-			}
-			switch (pos) {
-			case 0:
-				SetConsoleCursorPosition(console, { 0, 1 });
-				std::cout << "\033[30m\033[107mPRINT USERS\033[0m\033[40m\n";
-				std::cout << "CREATE A USER";
-				break;
-			case 1:
-				SetConsoleCursorPosition(console, { 0, 1 });
-				std::cout << "PRINT USERS\n";
-				std::cout << "\033[30m\033[107mCREATE A USER\033[0m\033[40m";
-				break;
-			}
-		} while (true);
+		int pos = menu(user_access_level);
 		system("cls");
 
 		switch (pos) {
 		case 0:
+			table(Database, user_access_level);
+			goto menu;
 			break;
 		case 1:
 			Database = create(Database);
 			break;
-		}
-
-		// Вывод таблицы и управление бд
-		COORD coords = { 1, 2 };
-		table:
-		system("cls");
-		print(Database);
-		std::cout << std::endl << "[ESC] - MENU; ";
-		std::cout << "S - SAVE CHANGES; ";
-		if (user_access_level == "Admin") {
-			std::cout << "[NUMPAD +] - SHOW MORE INFO; ";
-			std::cout << "[DELETE] - DELETE USER; ";
-		}
-		int siz = Database.size() + 1;
-		while (true) {
-			if (GetAsyncKeyState(VK_ESCAPE)) { // Выход в меню
-				goto menu;
-			}
-			else if (GetAsyncKeyState(VK_ADD) && user_access_level == "Admin") { // Вывод дополнительной информации
-				more_info_print(Database);
-			}
-			else if (GetAsyncKeyState(VK_UP)) {
-				if (coords.Y != 2) {
-					coords.Y--;
-				}
-			}
-			else if (GetAsyncKeyState(VK_DOWN)) {
-				if (coords.Y != siz) {
-					coords.Y++;
-				}
-			}
-			else if (GetAsyncKeyState(VK_DELETE) && user_access_level == "Admin") { // Функция удаления пользователя
-				std::cout << "\033[31mAre you sure you want to delete user " << Database[coords.Y - 2]["login"] << "? Y - YES; N - NO\033[0m";
-				do {
-					if (GetAsyncKeyState(0x59)) {
-						if (coords.Y != 2) {
-							--coords.Y;
-							Database.erase(coords.Y - 1);
-						}
-						else {
-							Database.erase(coords.Y - 2);
-						}
-						break;
-					}
-					else if (GetAsyncKeyState(0x4E)) break;
-				} while (true);
-				goto table;
-			}
-			else if (GetAsyncKeyState(0x53)) { // Сохранение изменений
-				save(Database);
-				SetConsoleCursorPosition(console, {0, (short)(siz + 3)});
-				std::cout << "\033[32mDatabase was successfully saved!\033[0m";
-				Sleep(1500);
-				std::cout << "\r                                ";
-			}
-			SetConsoleCursorPosition(console, coords);
-			Sleep(50);
 		}
 	}
 	else
