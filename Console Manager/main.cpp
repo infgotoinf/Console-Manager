@@ -195,11 +195,12 @@ std::string login(nlohmann::json& Database, nlohmann::json const Deleted) {
 		else
 		{
 			bool is_del = false;
-			for (; i < Deleted.size(); i++)
+			for (int i2 = 0; i2 < Deleted.size(); i2++)
 			{
-				if ((Deleted[i]["login"] == login && Deleted[i]["password"] == encrypt(password, login))) {
+				if ((Deleted[i2]["login"] == login && Deleted[i2]["password"] == encrypt(password, login))) {
 					std::cout << "\033[31mYOUR ACCOUNT WAS DELETED! " << char(1) << char(1) << char(1) << "\033[0m";
 					is_del = true;
+					break;
 				}
 			}
 			if (!is_del) std::cout << "WRONG PASSWORD OR LOGIN!";
