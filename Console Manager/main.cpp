@@ -93,7 +93,7 @@ void status_upd(nlohmann::json& Database) {
 bool is_old(nlohmann::json& Deleted) {
 	time_t t1 = time(NULL);
 	tm t = *localtime(&t1);
-	return (Deleted[Deleted.size() - 1]["Date"] < (t.tm_mday + t.tm_mon * 100 + t.tm_year * 10000 - 16) ? true : false);
+	return (Deleted[Deleted.size() - 1]["Date"] < (t.tm_mday + t.tm_mon * 28 - 16) ? true : false);
 }
 
 
@@ -496,7 +496,7 @@ table:
 					Deleted.push_back(Database[table_pos.Y - 2]);
 					time_t t1 = time(NULL);
 					tm t = *localtime(&t1);
-					Deleted[Deleted.size() - 1]["Date"] = t.tm_mday + t.tm_mon * 100 + t.tm_year * 10000;
+					Deleted[Deleted.size() - 1]["Date"] = t.tm_mday + t.tm_mon * 28;
 					if (table_pos.Y != 2) {
 						--table_pos.Y;
 						Database.erase(table_pos.Y - 1);

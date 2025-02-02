@@ -1,6 +1,8 @@
 #include "user.h"
 #include <cassert>
 #include <windows.h>
+#include <fstream>
+#include "nlohmann/json.hpp"
 
 void test_user_creation() {
 	//тест 1: норм создание пользователя с обычн значениями 
@@ -62,7 +64,37 @@ void test_user_creation() {
 	std::cout << "All tests passed successfully!\n";
 }
 
+void save(nlohmann::json Database, std::string filename) {
+	std::ofstream file(filename);
+	file << Database;
+}
+
+// Тест работы сохранения данных
+void testSaveFunction() {
+
+	nlohmann::json originalDatabase = {
+		{"id", 1},
+		{"name", "Original"}
+	};
+
+	nlohmann::json updatedDatabase = {
+		{"id", 2},
+		{"name", "Updated"}
+	};
+
+	save(updatedDatabase, "Test.json");
+
+	std::ifstream databaseFile("Test.json");
+	nlohmann::json loadedDatabase;
+	databaseFile >> loadedDatabase;
+
+	assert(loadedDatabase == updatedDatabase);
+
+	std::cout << "Test passed: Data saved and loaded correctly.\n";
+}
+
 int main() {
 	test_user_creation();
+	testSaveFunction();
 	return 0;
 }
